@@ -8,16 +8,22 @@ module.exports = (app, database) => {
 
   app.addSingleton('mongoose', createOneClient);
 
-  console.log('[xy-mongoose] database:', database);
-  const schemas = database.schemas;
+  let schemas = [];
+  for (let i = 0; i < database.length; i++) {
+    const db = database[i];
+    schemas = schemas.concat(db.schemas);
+  }
+  const schemasNames = [];
 
   if (schemas && schemas.length) {
-    for (const { name, fields, options } of schemas) {
-      const s = define(name, fields, options || {});
+    for (const { name, fields, options = {}, addOns } of schemas) {
+      schemasNames.push(name);
+      const s = define({ name, fields, options, addOns });
       if (!s) console.warn(`[xy-mongoose] database "${name}" failed: fields:${fields}, options:${options}`);
     }
-    console.log('[xy-mongoose] database init success.');
   }
+  console.log('[xy-mongoose] database:', schemasNames);
+  console.log('[xy-mongoose] database init success.');
 
 };
 
@@ -31,6 +37,7 @@ function createOneClient(config, app) {
 
   mongoose.connect(url, options || {});
   app.mongodb = mongoose.models;
+  app.mongodb.ObjectId = mongoose.Types.ObjectId;
 
   // app.mongodb.define = define;
   app.beforeStart(function* () {
@@ -40,7 +47,7 @@ function createOneClient(config, app) {
 }
 
 // 建表
-function define(collectionName, fields, options) {
+function define({ name: collectionName, fields, options, addOns }) {
   if (!collectionName || !fields || !Object.keys(fields).length) {
     console.log('collectionName and field are required. collectionName:', collectionName, 'fields:', fields);
     return null;
@@ -54,6 +61,10 @@ function define(collectionName, fields, options) {
   if (models && models[name]) return models[name];
 
   const SchemaInstance = new Schema(fields, options);
+
+  if (addOns) {
+    addOns(SchemaInstance, this);
+  }
 
   return model(name, SchemaInstance);
 

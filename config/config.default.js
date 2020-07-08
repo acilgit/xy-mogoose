@@ -7,11 +7,11 @@
  */
 exports.mongoose = {
     default: {
-        url: null,  // mongodb路径
-        options: null,  
+        url: null, // mongodb路径
+        options: null,
     },
-    db: './db_example', // Schema和Model文件 
-    app: false,     // 是否使用
+    db: './db_example', // Schema和Model文件
+    app: false, // 是否使用
     agent: false,
     schema: false,
 };
